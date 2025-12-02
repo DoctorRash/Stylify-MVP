@@ -1,15 +1,21 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Copy, CheckCircle } from "lucide-react";
 
 const TailorDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userName, setUserName] = useState("");
+  const [profileLink, setProfileLink] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -40,12 +46,15 @@ const TailorDashboard = () => {
       // Check if profile exists
       const { data: tailorProfile } = await supabase
         .from('tailors')
-        .select('id')
+        .select('id, slug')
         .eq('user_id', session.user.id)
         .single();
 
       if (!tailorProfile) {
         navigate('/tailor/profile-edit');
+      } else {
+        const link = `${window.location.origin}/tailor/${tailorProfile.slug}`;
+        setProfileLink(link);
       }
     };
 
@@ -55,6 +64,16 @@ const TailorDashboard = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/auth/login');
+  };
+
+  const copyProfileLink = () => {
+    navigator.clipboard.writeText(profileLink);
+    setCopied(true);
+    toast({
+      title: "Link copied!",
+      description: "Your profile link has been copied to clipboard.",
+    });
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -110,6 +129,29 @@ const TailorDashboard = () => {
             </Button>
           </div>
         </div>
+
+        {profileLink && (
+          <Card className="border-accent/20">
+            <CardHeader>
+              <CardTitle className="text-lg">Your Public Profile Link</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Share this link with customers so they can view your profile and place orders
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Input
+                  value={profileLink}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+                <Button onClick={copyProfileLink} size="icon">
+                  {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </motion.div>
     </div>
   );
