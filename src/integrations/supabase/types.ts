@@ -199,6 +199,58 @@ export type Database = {
           },
         ]
       }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          customer_user_id: string
+          id: string
+          order_id: string
+          rating: number
+          tailor_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          customer_user_id: string
+          id?: string
+          order_id: string
+          rating: number
+          tailor_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          customer_user_id?: string
+          id?: string
+          order_id?: string
+          rating?: number
+          tailor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_customer_user_id_fkey"
+            columns: ["customer_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_tailor_id_fkey"
+            columns: ["tailor_id"]
+            isOneToOne: false
+            referencedRelation: "tailors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       styles: {
         Row: {
           created_at: string | null
@@ -236,6 +288,7 @@ export type Database = {
       }
       tailors: {
         Row: {
+          average_rating: number | null
           bio: string | null
           business_name: string
           contact_whatsapp: string | null
@@ -244,12 +297,14 @@ export type Database = {
           location: string | null
           price_range: string | null
           profile_image_url: string | null
+          review_count: number | null
           slug: string
           specialties: string[] | null
           user_id: string
           verified: boolean
         }
         Insert: {
+          average_rating?: number | null
           bio?: string | null
           business_name: string
           contact_whatsapp?: string | null
@@ -258,12 +313,14 @@ export type Database = {
           location?: string | null
           price_range?: string | null
           profile_image_url?: string | null
+          review_count?: number | null
           slug: string
           specialties?: string[] | null
           user_id: string
           verified?: boolean
         }
         Update: {
+          average_rating?: number | null
           bio?: string | null
           business_name?: string
           contact_whatsapp?: string | null
@@ -272,6 +329,7 @@ export type Database = {
           location?: string | null
           price_range?: string | null
           profile_image_url?: string | null
+          review_count?: number | null
           slug?: string
           specialties?: string[] | null
           user_id?: string
@@ -328,6 +386,35 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
@@ -371,6 +458,7 @@ export type Database = {
         Returns: string
       }
       generate_unique_slug: { Args: { business_name: string }; Returns: string }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "tailor" | "customer" | "admin"
