@@ -182,12 +182,21 @@ const CustomerExplore = () => {
                       />
                     )}
                     <CardTitle className="text-xl">{tailor.business_name}</CardTitle>
-                    {tailor.location && (
-                      <CardDescription className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {tailor.location}
-                      </CardDescription>
-                    )}
+                    <div className="flex items-center justify-between">
+                      {tailor.location && (
+                        <CardDescription className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {tailor.location}
+                        </CardDescription>
+                      )}
+                      {tailor.average_rating && tailor.average_rating > 0 && (
+                        <div className="flex items-center gap-1 text-accent">
+                          <span className="text-sm font-semibold">{tailor.average_rating.toFixed(1)}</span>
+                          <span className="text-xs">⭐</span>
+                          <span className="text-xs text-muted-foreground">({tailor.review_count})</span>
+                        </div>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {tailor.bio && (
