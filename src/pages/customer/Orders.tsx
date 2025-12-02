@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -7,18 +8,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Loader2, MessageSquare, Star } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { OrderMessaging } from "@/components/OrderMessaging";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ReviewDialog } from "@/components/ReviewDialog";
 
 type Order = Tables<"orders">;
+type Review = Tables<"reviews">;
 
 const Orders = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<{ orderId: string; tailorId: string } | null>(null);
+  const [existingReview, setExistingReview] = useState<Review | null>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,6 +56,27 @@ const Orders = () => {
 
     checkAuthAndLoad();
   }, [navigate, toast]);
+
+  const handleReviewClick = async (order: Order) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Check if review already exists
+      const { data: review } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('order_id', order.id)
+        .eq('customer_user_id', session.user.id)
+        .maybeSingle();
+
+      setExistingReview(review);
+      setSelectedOrder({ orderId: order.id, tailorId: order.tailor_id });
+      setReviewDialogOpen(true);
+    } catch (error) {
+      console.error('Error checking review:', error);
+    }
+  };
 
   const loadOrders = async () => {
     try {
@@ -169,18 +196,40 @@ const Orders = () => {
                     )}
                   </div>
 
-                  <Button
-                    onClick={() => setSelectedOrderId(order.id)}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    View Messages
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setSelectedOrderId(order.id)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      View Messages
+                    </Button>
+                    {order.status === 'completed' && (
+                      <Button
+                        onClick={() => handleReviewClick(order)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        <Star className="w-4 h-4 mr-2" />
+                        Review
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+        )}
+
+        {selectedOrder && (
+          <ReviewDialog
+            open={reviewDialogOpen}
+            onOpenChange={setReviewDialogOpen}
+            orderId={selectedOrder.orderId}
+            tailorId={selectedOrder.tailorId}
+            existingReview={existingReview || undefined}
+          />
         )}
       </motion.div>
     </div>
