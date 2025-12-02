@@ -14,6 +14,7 @@ import Portfolio from "./pages/tailor/Portfolio";
 import TailorOrders from "./pages/tailor/Orders";
 import CustomerOrders from "./pages/customer/Orders";
 import PublicProfile from "./pages/tailor/PublicProfile";
+import AdminDashboard from "./pages/admin/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/tailor/:slug" element={<PublicProfile />} />
           <Route path="/customer/explore" element={<CustomerExplore />} />
           <Route path="/customer/orders" element={<CustomerOrders />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
