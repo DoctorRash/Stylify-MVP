@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -5,29 +6,15 @@ import { fadeInUp, staggerChildren } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, DollarSign, Phone, ArrowLeft, Loader2, Upload, X } from "lucide-react";
+import { MapPin, DollarSign, Phone, ArrowLeft, Loader2, Star, UserPlus } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
-import { z } from "zod";
+import { MultiStepOrderForm } from "@/components/MultiStepOrderForm";
 
 type Tailor = Tables<"tailors">;
 type Style = Tables<"styles">;
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-
-const orderSchema = z.object({
-  customer_name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
-  customer_phone: z.string().trim().min(10, "Valid phone number is required").max(20, "Phone number must be less than 20 characters"),
-  customer_email: z.string().trim().email("Invalid email").max(255).optional().or(z.literal("")),
-  fabric_type: z.string().trim().max(100).optional(),
-  design_notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional()
-});
 
 const PublicProfile = () => {
   const { slug } = useParams();
@@ -36,43 +23,14 @@ const PublicProfile = () => {
   const [tailor, setTailor] = useState<Tailor | null>(null);
   const [styles, setStyles] = useState<Style[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
+  const [isOrderSheetOpen, setIsOrderSheetOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
-
-  const [orderForm, setOrderForm] = useState({
-    customer_name: "",
-    customer_email: "",
-    customer_phone: "",
-    fabric_type: "",
-    design_notes: ""
-  });
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
-      
-      if (session) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('name, email, phone')
-          .eq('id', session.user.id)
-          .single();
-
-        if (userData) {
-          setOrderForm(prev => ({
-            ...prev,
-            customer_name: userData.name || "",
-            customer_email: userData.email || "",
-            customer_phone: userData.phone || ""
-          }));
-        }
-      }
     };
-
     checkAuth();
   }, []);
 
@@ -105,7 +63,7 @@ const PublicProfile = () => {
           title: "Tailor not found",
           description: "This tailor profile does not exist."
         });
-        navigate('/customer/explore');
+        navigate('/');
       } finally {
         setLoading(false);
       }
@@ -114,125 +72,12 @@ const PublicProfile = () => {
     loadTailorProfile();
   }, [slug, navigate, toast]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    // Validate files
-    const invalidFiles = files.filter(
-      file => !ACCEPTED_IMAGE_TYPES.includes(file.type) || file.size > MAX_FILE_SIZE
-    );
-
-    if (invalidFiles.length > 0) {
-      toast({
-        variant: "destructive",
-        title: "Invalid files",
-        description: "Please upload only JPEG, PNG, or WebP images under 5MB each."
-      });
-      return;
-    }
-
-    setUploading(true);
-    const uploadedUrls: string[] = [];
-
-    try {
-      for (const file of files) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('order-references')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('order-references')
-          .getPublicUrl(filePath);
-
-        uploadedUrls.push(publicUrl);
-      }
-
-      setReferenceImages(prev => [...prev, ...uploadedUrls]);
-      toast({
-        title: "Images uploaded",
-        description: `${uploadedUrls.length} image(s) uploaded successfully.`
-      });
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        variant: "destructive",
-        title: "Upload failed",
-        description: "Failed to upload images. Please try again."
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setReferenceImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSubmitOrder = async () => {
-    if (!tailor) return;
-
-    try {
-      // Validate form data
-      orderSchema.parse(orderForm);
-
-      setSubmitting(true);
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const { error } = await supabase
-        .from('orders')
-        .insert({
-          tailor_id: tailor.id,
-          customer_name: orderForm.customer_name,
-          customer_email: orderForm.customer_email || null,
-          customer_phone: orderForm.customer_phone,
-          fabric_type: orderForm.fabric_type || null,
-          customer_user_id: session?.user.id || null,
-          status: 'pending',
-          photo_urls: referenceImages.length > 0 ? referenceImages : null,
-          measurements: { notes: orderForm.design_notes }
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Order placed successfully!",
-        description: "The tailor will contact you soon."
-      });
-
-      setIsOrderDialogOpen(false);
-      setOrderForm({
-        customer_name: "",
-        customer_email: "",
-        customer_phone: "",
-        fabric_type: "",
-        design_notes: ""
-      });
-      setReferenceImages([]);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: error.issues[0].message
-        });
-      } else {
-        console.error('Error placing order:', error);
-        toast({
-          variant: "destructive",
-          title: "Failed to place order",
-          description: "Please try again later."
-        });
-      }
-    } finally {
-      setSubmitting(false);
-    }
+  const handleOrderComplete = () => {
+    setIsOrderSheetOpen(false);
+    toast({
+      title: "Order placed!",
+      description: "The tailor will contact you soon."
+    });
   };
 
   if (loading) {
@@ -261,7 +106,7 @@ const PublicProfile = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 -mt-32 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 -mt-32 relative z-10 pb-12">
         <motion.div
           variants={fadeInUp}
           initial="hidden"
@@ -270,34 +115,56 @@ const PublicProfile = () => {
         >
           {/* Profile Card */}
           <Card>
-            <CardContent className="p-8">
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/customer/explore')}
-                className="mb-4"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Explore
-              </Button>
+            <CardContent className="p-6 sm:p-8">
+              <div className="flex justify-between items-start mb-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/')}
+                  size="sm"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                
+                {!isAuthenticated && (
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/auth/signup')}
+                    size="sm"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Create Account
+                  </Button>
+                )}
+              </div>
 
               <div className="flex flex-col md:flex-row gap-8 items-start">
                 {tailor.profile_image_url && (
                   <img
                     src={tailor.profile_image_url}
                     alt={tailor.business_name}
-                    className="w-48 h-48 rounded-xl object-cover border-4 border-border"
+                    className="w-32 h-32 sm:w-48 sm:h-48 rounded-xl object-cover border-4 border-border"
                   />
                 )}
                 
                 <div className="flex-1 space-y-4">
                   <div>
-                    <h1 className="text-4xl font-bold text-primary mb-2">{tailor.business_name}</h1>
-                    {tailor.location && (
-                      <p className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="w-4 h-4" />
-                        {tailor.location}
-                      </p>
-                    )}
+                    <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-2">{tailor.business_name}</h1>
+                    <div className="flex flex-wrap items-center gap-4">
+                      {tailor.location && (
+                        <p className="flex items-center gap-2 text-muted-foreground">
+                          <MapPin className="w-4 h-4" />
+                          {tailor.location}
+                        </p>
+                      )}
+                      {tailor.average_rating && tailor.average_rating > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 fill-accent text-accent" />
+                          <span className="font-semibold">{Number(tailor.average_rating).toFixed(1)}</span>
+                          <span className="text-muted-foreground">({tailor.review_count} reviews)</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {tailor.bio && (
@@ -320,136 +187,37 @@ const PublicProfile = () => {
                       </div>
                     )}
                     {tailor.contact_whatsapp && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-5 h-5 text-primary" />
+                      <a 
+                        href={`https://wa.me/${tailor.contact_whatsapp.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-primary hover:underline"
+                      >
+                        <Phone className="w-5 h-5" />
                         <span className="font-medium">{tailor.contact_whatsapp}</span>
-                      </div>
+                      </a>
                     )}
                   </div>
 
-                  <Dialog open={isOrderDialogOpen} onOpenChange={setIsOrderDialogOpen}>
-                    <DialogTrigger asChild>
+                  <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
+                    <SheetTrigger asChild>
                       <Button size="lg" className="mt-4">
                         Place an Order
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Place Your Order</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="name">Your Name *</Label>
-                          <Input
-                            id="name"
-                            value={orderForm.customer_name}
-                            onChange={(e) => setOrderForm(prev => ({ ...prev, customer_name: e.target.value }))}
-                            placeholder="Enter your full name"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="email">Email</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={orderForm.customer_email}
-                            onChange={(e) => setOrderForm(prev => ({ ...prev, customer_email: e.target.value }))}
-                            placeholder="your.email@example.com"
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="phone">Phone Number *</Label>
-                          <Input
-                            id="phone"
-                            type="tel"
-                            value={orderForm.customer_phone}
-                            onChange={(e) => setOrderForm(prev => ({ ...prev, customer_phone: e.target.value }))}
-                            placeholder="+234 800 000 0000"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="fabric">Fabric Type</Label>
-                          <Input
-                            id="fabric"
-                            value={orderForm.fabric_type}
-                            onChange={(e) => setOrderForm(prev => ({ ...prev, fabric_type: e.target.value }))}
-                            placeholder="e.g., Cotton, Silk, Lace"
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="notes">Design Notes</Label>
-                          <Textarea
-                            id="notes"
-                            value={orderForm.design_notes}
-                            onChange={(e) => setOrderForm(prev => ({ ...prev, design_notes: e.target.value }))}
-                            placeholder="Describe what you'd like made..."
-                            rows={4}
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="photos">Reference Images (Optional)</Label>
-                          <div className="mt-2 space-y-4">
-                            {referenceImages.length > 0 && (
-                              <div className="grid grid-cols-3 gap-2">
-                                {referenceImages.map((url, index) => (
-                                  <div key={index} className="relative group">
-                                    <img
-                                      src={url}
-                                      alt={`Reference ${index + 1}`}
-                                      className="w-full h-24 object-cover rounded-lg border-2 border-border"
-                                    />
-                                    <Button
-                                      size="icon"
-                                      variant="destructive"
-                                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removeImage(index)}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <label className="cursor-pointer">
-                              <div className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors w-full justify-center">
-                                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                {uploading ? 'Uploading...' : 'Upload Images (Max 5MB each)'}
-                              </div>
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                multiple
-                                onChange={handleImageUpload}
-                                className="hidden"
-                                disabled={uploading}
-                              />
-                            </label>
-                            <p className="text-xs text-muted-foreground">
-                              Upload reference images of designs you'd like. Accepted formats: JPEG, PNG, WebP (Max 5MB each)
-                            </p>
-                          </div>
-                        </div>
-
-                        <Button onClick={handleSubmitOrder} className="w-full" disabled={submitting}>
-                          {submitting ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Placing Order...
-                            </>
-                          ) : (
-                            'Submit Order'
-                          )}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+                      <SheetHeader>
+                        <SheetTitle className="sr-only">Place Order</SheetTitle>
+                      </SheetHeader>
+                      <MultiStepOrderForm
+                        tailorId={tailor.id}
+                        tailorName={tailor.business_name}
+                        styles={styles}
+                        onComplete={handleOrderComplete}
+                        onCancel={() => setIsOrderSheetOpen(false)}
+                      />
+                    </SheetContent>
+                  </Sheet>
                 </div>
               </div>
             </CardContent>
