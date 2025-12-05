@@ -185,6 +185,17 @@ const Index = () => {
             <p className="text-muted-foreground">Loading tailors...</p>
           </div>
         )}
+
+        {/* Footer */}
+        <footer className="mt-20 pt-8 border-t border-border text-center text-sm text-muted-foreground">
+          <p>© 2024 Stylify. All rights reserved.</p>
+          <Link 
+            to="/admin/dashboard" 
+            className="text-xs text-muted-foreground/50 hover:text-primary mt-2 inline-block"
+          >
+            Admin
+          </Link>
+        </footer>
       </motion.div>
     </div>
   );
