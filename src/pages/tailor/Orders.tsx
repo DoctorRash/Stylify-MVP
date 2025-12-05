@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -95,6 +96,9 @@ const TailorOrders = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      // Get order details for notification
+      const order = orders.find(o => o.id === orderId);
+
       // Update order status
       const { error: orderError } = await supabase
         .from('orders')
@@ -117,6 +121,25 @@ const TailorOrders = () => {
         });
 
       if (historyError) throw historyError;
+
+      // Send notification to customer
+      if (order) {
+        try {
+          await supabase.functions.invoke("send-notification", {
+            body: {
+              type: "order_status",
+              recipient_email: order.customer_email,
+              recipient_phone: order.customer_phone,
+              order_id: orderId,
+              customer_name: order.customer_name,
+              status: newStatus,
+              message: notes,
+            },
+          });
+        } catch (notifyError) {
+          console.error("Notification error:", notifyError);
+        }
+      }
 
       toast({
         title: "Status updated",
