@@ -336,6 +336,38 @@ export const MultiStepOrderForm = ({
         .update({ status: "pending" })
         .eq("id", orderId);
 
+      // Send notification to tailor
+      try {
+        // Get tailor email for notification
+        const { data: tailorData } = await supabase
+          .from("tailors")
+          .select("contact_whatsapp, user_id")
+          .eq("id", tailorId)
+          .single();
+
+        if (tailorData) {
+          const { data: tailorUser } = await supabase
+            .from("users")
+            .select("email, name")
+            .eq("id", tailorData.user_id)
+            .single();
+
+          await supabase.functions.invoke("send-notification", {
+            body: {
+              type: "order_created",
+              recipient_email: tailorUser?.email,
+              recipient_phone: tailorData.contact_whatsapp,
+              order_id: orderId,
+              customer_name: formData.customer_name,
+              tailor_name: tailorUser?.name || tailorName,
+            },
+          });
+        }
+      } catch (notifyError) {
+        console.error("Notification error:", notifyError);
+        // Don't fail the order if notification fails
+      }
+
       toast({
         title: "Order placed successfully!",
         description: "The tailor will contact you soon.",
