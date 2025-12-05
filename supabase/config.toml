@@ -32,7 +32,7 @@ double_confirm_changes = true
 enable_confirmations = false
 
 [functions.tryon-generate]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-notification]
 verify_jwt = false
