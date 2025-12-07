@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInUp, focusGlow } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ const loginSchema = z.object({
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -76,13 +78,18 @@ const Login = () => {
         description: "You've successfully logged in."
       });
 
-      // Navigate based on role
-      if (userData?.role === 'tailor') {
-        navigate('/tailor/dashboard');
-      } else if (userData?.role === 'customer') {
-        navigate('/customer/explore');
-      } else if (userData?.role === 'admin') {
-        navigate('/admin/dashboard');
+      // If there's a redirect URL, use it
+      if (redirectUrl) {
+        navigate(redirectUrl);
+      } else {
+        // Navigate based on role
+        if (userData?.role === 'tailor') {
+          navigate('/tailor/dashboard');
+        } else if (userData?.role === 'customer') {
+          navigate('/customer/explore');
+        } else if (userData?.role === 'admin') {
+          navigate('/admin/dashboard');
+        }
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
