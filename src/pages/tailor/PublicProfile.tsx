@@ -199,25 +199,35 @@ const PublicProfile = () => {
                     )}
                   </div>
 
-                  <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
-                    <SheetTrigger asChild>
-                      <Button size="lg" className="mt-4">
-                        Place an Order
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-                      <SheetHeader>
-                        <SheetTitle className="sr-only">Place Order</SheetTitle>
-                      </SheetHeader>
-                      <MultiStepOrderForm
-                        tailorId={tailor.id}
-                        tailorName={tailor.business_name}
-                        styles={styles}
-                        onComplete={handleOrderComplete}
-                        onCancel={() => setIsOrderSheetOpen(false)}
-                      />
-                    </SheetContent>
-                  </Sheet>
+                  {isAuthenticated ? (
+                    <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
+                      <SheetTrigger asChild>
+                        <Button size="lg" className="mt-4">
+                          Place an Order
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+                        <SheetHeader>
+                          <SheetTitle className="sr-only">Place Order</SheetTitle>
+                        </SheetHeader>
+                        <MultiStepOrderForm
+                          tailorId={tailor.id}
+                          tailorName={tailor.business_name}
+                          styles={styles}
+                          onComplete={handleOrderComplete}
+                          onCancel={() => setIsOrderSheetOpen(false)}
+                        />
+                      </SheetContent>
+                    </Sheet>
+                  ) : (
+                    <Button 
+                      size="lg" 
+                      className="mt-4"
+                      onClick={() => navigate(`/auth/login?redirect=/tailor/${slug}`)}
+                    >
+                      Place an Order
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
