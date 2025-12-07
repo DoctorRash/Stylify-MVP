@@ -52,7 +52,7 @@ serve(async (req) => {
       try {
         let subject = "";
         let htmlContent = "";
-        const appUrl = "https://stylify.lovable.app"; // Update with your actual app URL
+        const appUrl = "https://stylify-mvp.vercel.app/"; 
 
         switch (type) {
           case "order_created":
