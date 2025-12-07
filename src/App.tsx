@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Signup from "./pages/auth/Signup";
 import Login from "./pages/auth/Login";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import TailorDashboard from "./pages/tailor/Dashboard";
 import CustomerExplore from "./pages/customer/Explore";
 import ProfileEdit from "./pages/tailor/ProfileEdit";
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth/signup" element={<Signup />} />
           <Route path="/auth/login" element={<Login />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
           <Route path="/tailor/dashboard" element={<TailorDashboard />} />
           <Route path="/tailor/profile-edit" element={<ProfileEdit />} />
           <Route path="/tailor/portfolio" element={<Portfolio />} />
