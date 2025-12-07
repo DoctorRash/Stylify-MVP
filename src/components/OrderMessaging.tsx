@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 
 type Message = Tables<"messages">;
+type Order = Tables<"orders">;
 
 interface OrderMessagingProps {
   orderId: string;
@@ -21,6 +23,8 @@ export const OrderMessaging = ({ orderId, onClose }: OrderMessagingProps) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,7 +32,30 @@ export const OrderMessaging = ({ orderId, onClose }: OrderMessagingProps) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setCurrentUserId(session.user.id);
+        
+        // Get current user's name
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (userData) {
+          setCurrentUserName(userData.name);
+        }
       }
+      
+      // Load order details for notifications
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+      
+      if (orderData) {
+        setOrder(orderData);
+      }
+      
       await loadMessages();
     };
 
@@ -89,19 +116,74 @@ export const OrderMessaging = ({ orderId, onClose }: OrderMessagingProps) => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !currentUserId) return;
+    if (!newMessage.trim() || !currentUserId || !order) return;
 
     setSending(true);
     try {
+      const messageContent = newMessage.trim();
+      
       const { error } = await supabase
         .from('messages')
         .insert({
           order_id: orderId,
           sender_id: currentUserId,
-          content: newMessage.trim()
+          content: messageContent
         });
 
       if (error) throw error;
+
+      // Send email notification to the other party
+      try {
+        // Determine if current user is tailor or customer
+        const { data: tailorData } = await supabase
+          .from('tailors')
+          .select('user_id, business_name')
+          .eq('id', order.tailor_id)
+          .single();
+
+        const isTailor = tailorData?.user_id === currentUserId;
+        
+        if (isTailor) {
+          // Tailor is sending, notify customer
+          await supabase.functions.invoke("send-notification", {
+            body: {
+              type: "new_message",
+              recipient_email: order.customer_email,
+              recipient_phone: order.customer_phone,
+              order_id: orderId,
+              message: messageContent,
+              sender_name: tailorData?.business_name || currentUserName,
+              recipient_name: order.customer_name,
+            },
+          });
+        } else {
+          // Customer is sending, notify tailor
+          // Get tailor's email
+          if (tailorData?.user_id) {
+            const { data: tailorUserData } = await supabase
+              .from('users')
+              .select('email')
+              .eq('id', tailorData.user_id)
+              .single();
+            
+            if (tailorUserData?.email) {
+              await supabase.functions.invoke("send-notification", {
+                body: {
+                  type: "new_message",
+                  recipient_email: tailorUserData.email,
+                  order_id: orderId,
+                  message: messageContent,
+                  sender_name: order.customer_name,
+                  recipient_name: tailorData?.business_name,
+                },
+              });
+            }
+          }
+        }
+      } catch (notifyError) {
+        console.error("Notification error:", notifyError);
+        // Don't fail the message send if notification fails
+      }
 
       setNewMessage("");
     } catch (error) {
@@ -125,12 +207,19 @@ export const OrderMessaging = ({ orderId, onClose }: OrderMessagingProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <Card className="h-[calc(100vh-8rem)]">
+        <Card className="h-[calc(100vh-4rem)] md:h-[calc(100vh-8rem)]">
           <CardHeader className="border-b">
             <div className="flex items-center justify-between">
-              <CardTitle>Order Messages</CardTitle>
+              <div>
+                <CardTitle>Order Messages</CardTitle>
+                {order && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Order #{orderId.slice(0, 8)} • {order.customer_name}
+                  </p>
+                )}
+              </div>
               <Button onClick={onClose} variant="ghost">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
