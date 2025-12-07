@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -7,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -18,6 +20,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -133,15 +136,23 @@ const Login = () => {
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <motion.div variants={focusGlow} whileFocus="focus">
+            <motion.div variants={focusGlow} whileFocus="focus" className="relative">
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="Enter your password"
                 required
+                className="pr-10"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </motion.div>
           </div>
 
