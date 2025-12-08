@@ -456,31 +456,6 @@ export function OrderCreationWizard({
                                     <div><span className="text-muted-foreground">Hip:</span> {state.measurements.hip}"</div>
                                 </div>
                             </Card>
-                        )}
-                    </div>
-                );
-
-            case 5:
-                return (
-                    <TryOnPreview
-                        customerPhoto={state.customerPhotoUrl!}
-                        stylePhoto={state.stylePhotoUrl!}
-                        onGenerate={handleGenerateTryOn}
-                        onComplete={(result) => {
-                            setState((prev) => ({
-                                ...prev,
-                                tryOnResultUrl: result.url,
-                                tryOnIsFallback: result.isFallback,
-                            }));
-                        }}
-                    />
-                );
-
-            case 6:
-                return (
-                    <div className="space-y-6">
-                        <div>
-                            <h3 className="text-lg font-semibold mb-2">Complete Your Order</h3>
                             <p className="text-sm text-muted-foreground mb-4">
                                 Provide your contact information to finalize the order
                             </p>
@@ -538,66 +513,66 @@ export function OrderCreationWizard({
                                 </Card>
                             )}
                         </div>
-                    </div>
+                    </div >
                 );
 
             default:
-                return null;
-        }
+    return null;
+}
     };
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Get Virtual Try-On from {tailorName}</DialogTitle>
-                    <DialogDescription>
-                        Step {currentStep} of {totalSteps}: {stepTitles[currentStep]}
-                    </DialogDescription>
-                </DialogHeader>
+return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+                <DialogTitle>Get Virtual Try-On from {tailorName}</DialogTitle>
+                <DialogDescription>
+                    Step {currentStep} of {totalSteps}: {stepTitles[currentStep]}
+                </DialogDescription>
+            </DialogHeader>
 
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                    <Progress value={progressPercentage} className="h-2" />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                        {Object.entries(stepTitles).map(([step, title]) => (
-                            <span
-                                key={step}
-                                className={currentStep >= Number(step) ? 'text-primary font-medium' : ''}
-                            >
-                                {title}
-                            </span>
-                        ))}
-                    </div>
+            {/* Progress Bar */}
+            <div className="space-y-2">
+                <Progress value={progressPercentage} className="h-2" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                    {Object.entries(stepTitles).map(([step, title]) => (
+                        <span
+                            key={step}
+                            className={currentStep >= Number(step) ? 'text-primary font-medium' : ''}
+                        >
+                            {title}
+                        </span>
+                    ))}
                 </div>
+            </div>
 
-                {/* Step Content */}
-                <div className="py-6">{renderStep()}</div>
+            {/* Step Content */}
+            <div className="py-6">{renderStep()}</div>
 
-                {/* Navigation Buttons */}
-                <div className="flex justify-between border-t pt-4">
-                    <Button
-                        variant="outline"
-                        onClick={handleBack}
-                        disabled={currentStep === 1 || isSubmitting}
-                    >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back
+            {/* Navigation Buttons */}
+            <div className="flex justify-between border-t pt-4">
+                <Button
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={currentStep === 1 || isSubmitting}
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                </Button>
+
+                {currentStep < totalSteps ? (
+                    <Button onClick={handleNext} disabled={!canProceed() || isSubmitting}>
+                        Next
+                        <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-
-                    {currentStep < totalSteps ? (
-                        <Button onClick={handleNext} disabled={!canProceed() || isSubmitting}>
-                            Next
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    ) : (
-                        <Button onClick={handleFinalSubmit} disabled={!canProceed() || isSubmitting}>
-                            {isSubmitting ? 'Submitting...' : 'Submit Order'}
-                            <Check className="ml-2 h-4 w-4" />
-                        </Button>
-                    )}
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
+                ) : (
+                    <Button onClick={handleFinalSubmit} disabled={!canProceed() || isSubmitting}>
+                        {isSubmitting ? 'Submitting...' : 'Submit Order'}
+                        <Check className="ml-2 h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+        </DialogContent>
+    </Dialog>
+);
 }
