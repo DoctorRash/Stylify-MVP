@@ -6,12 +6,11 @@ import { fadeInUp, staggerChildren } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, DollarSign, Phone, ArrowLeft, Loader2, Star, UserPlus } from "lucide-react";
+import { MapPin, DollarSign, Phone, ArrowLeft, Loader2, Star, UserPlus, Sparkles } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
-import { MultiStepOrderForm } from "@/components/MultiStepOrderForm";
+import { OrderCreationWizard } from "@/components/OrderCreationWizard";
 
 type Tailor = Tables<"tailors">;
 type Style = Tables<"styles">;
@@ -125,7 +124,7 @@ const PublicProfile = () => {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                
+
                 {!isAuthenticated && (
                   <Button
                     variant="outline"
@@ -146,7 +145,7 @@ const PublicProfile = () => {
                     className="w-32 h-32 sm:w-48 sm:h-48 rounded-xl object-cover border-4 border-border"
                   />
                 )}
-                
+
                 <div className="flex-1 space-y-4">
                   <div>
                     <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-2">{tailor.business_name}</h1>
@@ -187,7 +186,7 @@ const PublicProfile = () => {
                       </div>
                     )}
                     {tailor.contact_whatsapp && (
-                      <a 
+                      <a
                         href={`https://wa.me/${tailor.contact_whatsapp.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -220,8 +219,8 @@ const PublicProfile = () => {
                       </SheetContent>
                     </Sheet>
                   ) : (
-                    <Button 
-                      size="lg" 
+                    <Button
+                      size="lg"
                       className="mt-4"
                       onClick={() => navigate(`/auth/login?redirect=/tailor/${slug}`)}
                     >
