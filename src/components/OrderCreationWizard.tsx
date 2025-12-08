@@ -85,15 +85,17 @@ export function OrderCreationWizard({
     const canProceed = () => {
         switch (currentStep) {
             case 1:
-                return !!(state.selectedStyleId || state.customStyleFile);
+                return !!(state.selectedStyleId || state.customStyleFile || state.stylePhotoUrl);
             case 2:
-                return !!state.customerPhotoFile;
+                // Made optional - allow skip even if upload fails
+                return true;
             case 3:
                 return !!state.measurements;
             case 4:
                 return true; // Can proceed to generate
             case 5:
-                return !!state.tryOnResultUrl;
+                // Made optional - allow skip even if AI generation fails
+                return true;
             case 6:
                 return !!(state.customerEmail && state.customerPhone);
             default:
@@ -322,8 +324,8 @@ export function OrderCreationWizard({
                                         <Card
                                             key={style.id}
                                             className={`cursor-pointer transition-all ${state.selectedStyleId === style.id
-                                                    ? 'ring-2 ring-primary'
-                                                    : 'hover:ring-1 hover:ring-primary/50'
+                                                ? 'ring-2 ring-primary'
+                                                : 'hover:ring-1 hover:ring-primary/50'
                                                 }`}
                                             onClick={() => handleStyleSelect(style.id, style.image_url)}
                                         >
