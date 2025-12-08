@@ -268,13 +268,13 @@ export function OrderCreationWizard({
                     customer_name: state.customerEmail.split('@')[0],
                     customer_phone: state.customerPhone,
                     customer_email: state.customerEmail,
-                    customer_photo_url: state.customerPhotoUrl,
-                    style_photo_url: state.stylePhotoUrl,
+                    customer_photo_url: state.customerPhotoUrl || null,
+                    style_photo_url: state.stylePhotoUrl || null,
                     style_id: state.selectedStyleId || null,
-                    measurements: state.measurements,
+                    measurements: state.measurements || null,
                     measurements_complete: !!state.measurements,
                     status: 'pending',
-                    design_image_url: state.tryOnResultUrl,
+                    design_image_url: state.tryOnResultUrl || null,
                 })
                 .select('id')
                 .single();
