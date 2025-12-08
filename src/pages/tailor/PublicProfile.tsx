@@ -22,7 +22,7 @@ const PublicProfile = () => {
   const [tailor, setTailor] = useState<Tailor | null>(null);
   const [styles, setStyles] = useState<Style[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOrderSheetOpen, setIsOrderSheetOpen] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -70,14 +70,6 @@ const PublicProfile = () => {
 
     loadTailorProfile();
   }, [slug, navigate, toast]);
-
-  const handleOrderComplete = () => {
-    setIsOrderSheetOpen(false);
-    toast({
-      title: "Order placed!",
-      description: "The tailor will contact you soon."
-    });
-  };
 
   if (loading) {
     return (
@@ -199,32 +191,31 @@ const PublicProfile = () => {
                   </div>
 
                   {isAuthenticated ? (
-                    <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
-                      <SheetTrigger asChild>
-                        <Button size="lg" className="mt-4">
-                          Place an Order
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-                        <SheetHeader>
-                          <SheetTitle className="sr-only">Place Order</SheetTitle>
-                        </SheetHeader>
-                        <MultiStepOrderForm
-                          tailorId={tailor.id}
-                          tailorName={tailor.business_name}
-                          styles={styles}
-                          onComplete={handleOrderComplete}
-                          onCancel={() => setIsOrderSheetOpen(false)}
-                        />
-                      </SheetContent>
-                    </Sheet>
+                    <>
+                      <Button
+                        size="lg"
+                        className="mt-4 gap-2"
+                        onClick={() => setIsWizardOpen(true)}
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        Get Virtual Try-On
+                      </Button>
+                      <OrderCreationWizard
+                        open={isWizardOpen}
+                        onOpenChange={setIsWizardOpen}
+                        tailorId={tailor.id}
+                        tailorName={tailor.business_name}
+                        styles={styles}
+                      />
+                    </>
                   ) : (
                     <Button
                       size="lg"
-                      className="mt-4"
+                      className="mt-4 gap-2"
                       onClick={() => navigate(`/auth/login?redirect=/tailor/${slug}`)}
                     >
-                      Place an Order
+                      <Sparkles className="w-5 h-5" />
+                      Get Virtual Try-On
                     </Button>
                   )}
                 </div>
